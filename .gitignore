@@ -73,6 +73,7 @@ Plugins/*/Binaries/*
 
 # Builds
 Build/*
+MarbleRun/Build/*
 
 #PDF Materials
 PDF/*
