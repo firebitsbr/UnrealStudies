@@ -17,5 +17,24 @@ class BULLCOWGAME_API UBullCowCartridge : public UCartridge
 
 	// Your declarations go below!
 	private:
-	
+	TArray<FString> ListOfWords;
+	FString HiddenWord;
+
+	int32 Lifes;
+	int32 Bulls;
+	int32 Cows;
+
+	void ClearHiddenWordAndLifes() noexcept;
+
+	void InitGame() noexcept;
+	void PrintHint() noexcept;
+
+	bool IsValidInput(const FString& Input) noexcept;
+	bool IsIsogram(const FString& Input) const noexcept;
+
+	void WinEvent() noexcept;
+	void LostEvent(const FString& Input) noexcept;
+	void GetAmountOfBullsAndCows(const FString& Input) noexcept;
+
+	bool Replay(const FString& Input) noexcept;
 };
