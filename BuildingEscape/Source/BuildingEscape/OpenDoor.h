@@ -4,8 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "GameFramework/Actor.h"
+#include "Components/AudioComponent.h"
 #include "Engine/TriggerVolume.h"
+#include "GameFramework/Actor.h"
 #include "OpenDoor.generated.h"
 
 
@@ -36,13 +37,20 @@ private:
 	UPROPERTY(EditAnywhere)	float OpenSpeed;
 	UPROPERTY(EditAnywhere)	float CloseSpeed;
 	UPROPERTY(EditAnywhere)	float CloseDelay;
-	UPROPERTY(EditAnywhere) ATriggerVolume* DoorSensor;
-	
-	AActor* ActorThatIteracts;
+	UPROPERTY(EditAnywhere)	float MinMassToTrigger;
+	UPROPERTY(EditAnywhere) ATriggerVolume* DoorSensor = nullptr;
 
+	UAudioComponent* AudioComponent = nullptr;
+	
 	float TargetYaw;
 	float FrameDeltaTime;
 	float CloseTimer;
 
-	void CheckDoorSensorPtr() const noexcept;
+	bool IsOpen = false;
+
+	void CheckPtrs() noexcept;
+	[[nodiscard]] bool HasOverlappingActors(TArray<AActor*>&) const noexcept;
+	[[nodiscard]] bool CanOverlappingActorsOpen() const noexcept;
+
+	void PlaySoundOnDoorMovement(bool) noexcept;
 };

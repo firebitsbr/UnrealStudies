@@ -16,7 +16,7 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (PhysicsHandle->GrabbedComponent)
+	if (PhysicsHandle && PhysicsHandle->GetGrabbedComponent())
 	{
 		PhysicsHandle->SetTargetLocation(GetLineTraceEnd());
 	}
@@ -71,31 +71,40 @@ void UGrabber::Grab() noexcept
 
 FHitResult UGrabber::GetFirstPhysicsBodyInReach() const noexcept
 {
-	FVector PlayerViewpointLocation;
-
-	auto LineTraceEnd = GetLineTraceEnd(OUT PlayerViewpointLocation);
-
 	FCollisionQueryParams TraceParamenters(FName(TEXT("")), false, GetOwner());
 	FHitResult Hit;
 	GetWorld()->LineTraceSingleByObjectType(
 		OUT Hit,
-		PlayerViewpointLocation,
-		LineTraceEnd,
+		GetPlayerWorldPos(),
+		GetLineTraceEnd(),
 		FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody),
 		TraceParamenters);
 
 	return std::move(Hit);
 }
 
-FVector UGrabber::GetLineTraceEnd(FVector& PlayerViewpointLocation) const noexcept
+FVector UGrabber::GetLineTraceEnd() const noexcept
 {
+	FVector PlayerViewpointLocation;
 	FRotator PlayerViewpointRotation;
 
 	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(
 		OUT PlayerViewpointLocation,
 		OUT PlayerViewpointRotation);
 
-	return PlayerViewpointLocation + (PlayerViewpointRotation.Vector() * GrabMaxDistance);
+	return std::move(PlayerViewpointLocation + (PlayerViewpointRotation.Vector() * GrabMaxDistance));
+}
+
+FVector UGrabber::GetPlayerWorldPos() const noexcept
+{
+	FVector PlayerViewpointLocation;
+	FRotator PlayerViewpointRotation;
+
+	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(
+		OUT PlayerViewpointLocation,
+		OUT PlayerViewpointRotation);
+
+	return std::move(PlayerViewpointLocation);
 }
 
 void UGrabber::Release() noexcept

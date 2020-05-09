@@ -1,11 +1,11 @@
 // Copyright Rafael Ocariz 2020
 
-
-#include "OpenDoor.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+#include "OpenDoor.h"
 
-// Sets default values for this component's properties
+#define OUT
+
 UOpenDoor::UOpenDoor()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
@@ -14,18 +14,14 @@ UOpenDoor::UOpenDoor()
 	// ...
 }
 
-
-// Called when the game starts
 void UOpenDoor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	ActorThatIteracts = GetWorld()->GetFirstPlayerController()->GetPawn();
 	CloseTimer = 0.f;
-	CheckDoorSensorPtr();
+	CheckPtrs();
 }
 
-// Called every frame
 void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -33,7 +29,7 @@ void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
 	FrameDeltaTime = DeltaTime;
 	auto CloseTimerStart = GetWorld()->GetTimeSeconds();
 
-	if (DoorSensor && ActorThatIteracts && DoorSensor->IsOverlappingActor(ActorThatIteracts))
+	if (DoorSensor && CanOverlappingActorsOpen())
 	{
 		Open();
 		CloseTimer = CloseTimerStart;
@@ -50,6 +46,8 @@ void UOpenDoor::Open() noexcept
 	auto currentYaw = GetOwner()->GetActorRotation().Yaw;
 	TargetYaw = OpenedYaw;
 	MoveDoor(currentYaw, true);
+
+	PlaySoundOnDoorMovement(true);
 }
 
 void UOpenDoor::Close() noexcept
@@ -57,6 +55,8 @@ void UOpenDoor::Close() noexcept
 	auto currentYaw = GetOwner()->GetActorRotation().Yaw;
 	TargetYaw = ClosedYaw;
 	MoveDoor(currentYaw, false);
+
+	PlaySoundOnDoorMovement(false);
 }
 
 void UOpenDoor::MoveDoor(float Current, bool IsOpening) noexcept
@@ -64,11 +64,53 @@ void UOpenDoor::MoveDoor(float Current, bool IsOpening) noexcept
 	GetOwner()->SetActorRotation(FRotator(0, FMath::FInterpConstantTo(Current, TargetYaw, FrameDeltaTime, IsOpening ? OpenSpeed : CloseSpeed), 0));
 }
 
-void UOpenDoor::CheckDoorSensorPtr() const noexcept
+void UOpenDoor::CheckPtrs() noexcept
 {
 	if (!DoorSensor)
 	{
 		UE_LOG(LogTemp, Error, TEXT("%s has OpenDoor component on it, but no DoorSensor set"), *GetOwner()->GetName());
 	}
+
+	AudioComponent = GetOwner()->FindComponentByClass<UAudioComponent>();
+
+	if (!AudioComponent)
+	{
+		UE_LOG(LogTemp, Error, TEXT("%s has OpenDoor component on it, but no AudioComponent set"), *GetOwner()->GetName());
+	}
 }
 
+bool UOpenDoor::HasOverlappingActors(TArray<AActor*>& OverlappingActors) const noexcept
+{
+	DoorSensor->GetOverlappingActors(OUT OverlappingActors);
+	return OverlappingActors.Num() > 0;
+}
+
+bool UOpenDoor::CanOverlappingActorsOpen() const noexcept
+{
+	float TotalMass = 0.f;
+
+	TArray<AActor*> OverlappingActors;
+	if (HasOverlappingActors(OUT OverlappingActors))
+	{
+		for (const auto& Actor : OverlappingActors)
+		{
+			auto Component = Actor->FindComponentByClass<UPrimitiveComponent>();
+
+			if (Component->IsSimulatingPhysics())
+			{
+				TotalMass += Component->GetMass();
+			}
+		}
+	}
+
+	return TotalMass >= MinMassToTrigger;
+}
+
+void UOpenDoor::PlaySoundOnDoorMovement(bool OpenState) noexcept
+{
+	if (IsOpen != OpenState && AudioComponent && !AudioComponent->IsPlaying())
+	{
+		AudioComponent->Play();
+		IsOpen = !IsOpen;
+	}
+}

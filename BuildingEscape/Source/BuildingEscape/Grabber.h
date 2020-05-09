@@ -30,7 +30,7 @@ protected:
 
 private:
 	// Variables
-	UPROPERTY(EditAnywhere, Category = Properties) float GrabMaxDistance;
+	UPROPERTY(EditAnywhere, Category = Properties) float GrabMaxDistance = 150.f;
 
 	UPhysicsHandleComponent* PhysicsHandle = nullptr;
 	UInputComponent* InputComponent = nullptr;
@@ -43,7 +43,9 @@ private:
 	void Grab() noexcept;
 
 	[[nodiscard]] FHitResult GetFirstPhysicsBodyInReach() const noexcept;
-	[[nodiscard]] FVector GetLineTraceEnd(FVector& = DefaultVector) const noexcept;
+
+	[[nodiscard]] FVector GetLineTraceEnd() const noexcept;
+	[[nodiscard]] FVector GetPlayerWorldPos() const noexcept;
 
 	void Release() noexcept;
 };
